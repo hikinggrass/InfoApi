@@ -14,20 +14,21 @@ http://server:25577/onlinemode
 http://server:25577/version 
 http://server:25577/say/text_to_say 
 http://server:25577/cmd/cmd_attribute_another
+
 each request needs its secret key at the end like: 
 http://server:25577/version?secret
 
-Download
 
 Config File
 secret=secret # Youre Secret Key
- port=25577 # The Port to use
- opplayer=kingseta # Not used atm
- name=&a[&bServer&a]&f # The Chat Name
- enablechatlog=true # Not used atm
- loglength=25 # Not used atm
-Example Usage PHP
-PHP:
+port=25577 # The Port to use
+opplayer=kingseta # Not used atm
+name=&a[&bServer&a]&f # The Chat Name
+enablechatlog=true # Not used atm
+loglength=25 # Not used atm
+
+
+Example Usage PHP:
 $apiurl = "http://server:25577/onlineplayer"
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $apiurl);
@@ -35,7 +36,9 @@ curl_setopt($ch, CURLOPT_HEADER, 1);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_TIMEOUT, 1000);
 $onlineplayer = curl_exec($ch);
-echo $onlineplayer; 
+echo $onlineplayer;
+
+ 
 Please note: this Plugin will give an Error if you do /reload, because the API Server CAN'T get reloaded at the moment. Thats not really an problem, but you should know. Also there can be an Error on Shutdown... im sorry about that
 
 If somebody knows how i could convert Minecraft Time to real time, please say 
