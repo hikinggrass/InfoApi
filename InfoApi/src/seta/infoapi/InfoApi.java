@@ -2,41 +2,37 @@ package seta.infoapi;
 
 import java.util.logging.Logger;
 
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class InfoApi extends JavaPlugin {
-	Logger log = Logger.getLogger("Minecraft");
-	Server s;
-	ChatLog cl;
-	
-	@SuppressWarnings("deprecation")
-	@Override
-	public void onDisable() {
-		log.info("[*] InfoApi disabled.");
-		s.destroy();
-		s.interrupt();
-		s.kill();
-	}
-	
-	@Override
-	public void onEnable() {
-		
-    	Config cfg = new Config();
-    	if(cfg.getConfig("enablechatlog").equals("true")){
-    		cl = new ChatLog(cfg);
-            PluginManager pm = getServer().getPluginManager();
-            pm.registerEvent(Event.Type.PLAYER_CHAT, cl, Priority.High, this);
-    		s = new Server(cfg,cl);
-    		s.start();
-    	} else {
-    		s = new Server(cfg);
-    		s.start();
-    	}
+    Logger log = Logger.getLogger("Minecraft");
+    Server server;
+    // ChatLog chatLog;
 
-		log.info("[*] InfoApi enabled.");
+    @Override
+    public void onEnable() {
+
+	Config configuration = new Config();
+	server = new Server(configuration);
+	
+	server.start();
+	
+	if(!server.isAlive()) {
+	    server.start();
+	    log.info("InfoApi HTTP Listener was resurrected");
 	}
+
+	log.info("InfoAPI (Janka flavoured) sucessfully started.");
+    }
+
+    // @SuppressWarnings("deprecation")
+    @Override
+    public void onDisable() {
+	// server.destroy();
+	// server.interrupt();
+	// server.kill();
+	server.close();
+	log.info("InfoAPI (Janka flavoured) sucessfully ended");
+    }
 
 }

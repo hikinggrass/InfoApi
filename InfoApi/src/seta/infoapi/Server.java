@@ -4,141 +4,237 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
-import org.bukkit.command.CommandSender;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 class Server extends Thread {
 
-	Socket skt;
-	ServerSocket srvr;
-	PrintWriter out;
-	boolean doit = true;
-	Config cfg;
-	ChatLog cl;
-	
-	Server(Config asd){
-		cfg = asd;
-	}
-	
-	Server(Config asd, ChatLog ci){
-		cfg = asd;
-		cl = ci;
-	}
-	
-    public static String colorize(String s){
-        if(s == null) return null;
-        return s.replaceAll("&([0-9a-f])", "\u00A7$1");
-    }
-	
-	public void run() {
-	  if(doit == true){
-	      String data = "ERROR: Unknown request";
-	      try {
-	    	 srvr = new ServerSocket(Integer.parseInt(cfg.getConfig("port")));
-	         skt = srvr.accept();
-	         BufferedReader in = new BufferedReader(new InputStreamReader(skt.getInputStream()));
-	         String inp = in.readLine().toString();
-	         if(inp.contains("?"+cfg.getConfig("secret"))){
-	        	 inp = inp.replace("?"+cfg.getConfig("secret")," ");
-		         if(inp.contains("GET /onlineplayer/")){
-		        	 if(inp.split("onlineplayer/")[1].split(" ")[0].equals("all")){
-		        		 data = Bukkit.getServer().getOnlinePlayers().length+""; 
-		        	 } else {
-			        	 if(Bukkit.getServer().getWorlds().toString().contains(inp.split("onlineplayer/")[1].split(" ")[0])){
-			        		 data = Bukkit.getServer().getWorld(inp.split("onlineplayer/")[1].split(" ")[0]+"").getPlayers().toArray().length+"";
-			        	 } else {
-			        		 data = "ERROR: Unknown World";
-			        	 }
-		        	 }
-		         } else if(inp.contains("GET /onlineplayer")){
-		        	 data = Bukkit.getServer().getOnlinePlayers().length+""; 
-		         } else if(inp.contains("GET /maxplayer")){
-		        	 data = Bukkit.getServer().getMaxPlayers()+""; 
-		         } else if(inp.contains("GET /time/")){
-		        	 if(Bukkit.getServer().getWorlds().toString().contains(inp.split("time/")[1].split(" ")[0])){
-		        		 data = Bukkit.getServer().getWorld(inp.split("time/")[1].split(" ")[0]+"").getTime()+"";
-		        	 } else {
-		        		 data = "ERROR: Unknown World";
-		        	 }
-		         } else if(inp.contains("GET /temp/")){
-		        	 if(Bukkit.getServer().getWorlds().toString().contains(inp.split("temp/")[1].split(" ")[0])){
-		        		 data = Bukkit.getServer().getWorld(inp.split("temp/")[1].split(" ")[0]+"").getSpawnLocation().getBlock().getTemperature()+"";
-		        	 } else {
-		        		 data = "ERROR: Unknown World";
-		        	 }
-		         } else if(inp.contains("GET /playerlist/")){
-		        	 if(Bukkit.getServer().getWorlds().toString().contains(inp.split("playerlist/")[1].split(" ")[0])){
-			        	 data = "";
-			        	 for (Player player : Bukkit.getServer().getWorld(inp.split("playerlist/")[1].split(" ")[0]).getPlayers()){
-			        		 data += player.getName()+", ";
-						 }
-			        	 data += "none";
-			        	 data = data.replace(", none", "");
-		        	 } else {
-		        		 data = "ERROR: Unknown World";
-		        	 }
-		         } else if(inp.contains("GET /playerlist")){
-		        	 data = "";
-		        	 for (Player player : Bukkit.getServer().getOnlinePlayers()){
-		        		 data += player.getName()+", ";
-					 }
-		        	 data += "none";
-		        	 data = data.replace(", none", "");
-		         } else if(inp.contains("GET /onlinemode")){
-		        	 data = Bukkit.getServer().getOnlineMode()+"";
-		         } else if(inp.contains("GET /version")){
-		        	 data = Bukkit.getServer().getVersion()+"";
-		         } else if(inp.contains("GET /say/")){
-		        	 Bukkit.getServer().broadcastMessage(colorize(cfg.getConfig("name"))+" "+colorize(inp.split("say/")[1].split(" ")[0].replace("_", " ")));
-		        	 data = "ok";
-		         } else if(inp.contains("GET /cmd/")){
-		        	 CommandSender s = null;
-		        	 Bukkit.getServer().dispatchCommand(s,inp.split("cmd/")[1].split(" ")[0].replace("_"," "));
-		        	 data = "ok";
-		         } else if(inp.contains("GET /chat")){
-		        	 if(cfg.getConfig("enablechatlog").equals("true")){
-		        		 data = cl.list();
-		        	 } else {
-		        		 data = "ERROR: Chatlog is disabled in config";
-		        	 }
-		         }
-	         } else {
-	        	 data = "ERROR: Unknown request or wrong secret";
-	         }
-	         out = new PrintWriter(skt.getOutputStream(), true);
-	         out.print(data);
-	         out.close();
-	         skt.close();
-	         srvr.close();
-	         this.run();
-	      }
-	      catch(Exception e) {
-	         System.out.print("Whoops! Api didn't work!\n");
-	         out.close();
-	         try {
-				skt.close();
-		        srvr.close();
-		        this.run();
-	         } catch (IOException e1) {
-				e1.printStackTrace();
-	         }
-	      }
-	  }
-   }
-   
+    protected boolean threadShouldStop = false;
+    Logger log = Logger.getLogger("Minecraft");
+    Socket socket;
+    ServerSocket serverSocket;
 
-	public void kill(){
-		   doit = false;
-	       try {
-	    	   out.close();
-	    	   skt.close();
-		       srvr.close();
-	       } catch (IOException e) {
-				e.printStackTrace();
-	       }
+    PrintWriter out;
+    Config configuration;
+
+    public Server(Config cfg) {
+	configuration = cfg;
+    }
+
+    public void run() {
+	while (!this.isClosing()) {
+	    try {
+		// Cast to String
+		Integer serverPort = Integer.valueOf(configuration.getConfig("port")).intValue();
+		String outputString, checkString;
+		ServerSocket serverSocket = null;
+		Socket clientSocket = null;
+		BufferedReader input;
+		PrintWriter output;
+
+		try {
+		    serverSocket = new ServerSocket(serverPort);
+		} catch (IOException e) {
+		    log.info("InfoApi couldn't listen to given Port: " + Integer.toString(serverPort));
+		}
+
+		try {
+		    clientSocket = serverSocket.accept();
+		} catch (IOException e) {
+		    log.info("InfoApi couldn't accept on: " + Integer.toString(serverPort));
+		}
+
+		input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		output = new PrintWriter(clientSocket.getOutputStream());
+
+		checkString = input.readLine();
+		if (isValidCommandString(checkString)) {
+		    outputString = processCommand(checkString);
+		    outputString = addHTTPHeader(outputString);
+
+		    output.println(outputString);
+		    output.flush();
+		}
+		input.close();
+		output.close();
+		clientSocket.close();
+		serverSocket.close();
+
+	    } catch (Exception e) {
+		log.info("InfoApi had some Problems while running");
+		this.close();
+	    }
 	}
+    }
+
+    private boolean isValidCommandString(String getString) {
+	String secretKey = configuration.getConfig("secret").toString();
+
+	if (!getString.isEmpty()) {
+	    if (getString.contains("?" + secretKey)) {
+		return true;
+	    }
+	}
+
+	return false;
+    }
+
+    /**
+     * Process Commands
+     * 
+     * @param getString
+     * @return
+     */
+    private String processCommand(String getString) {
+	String wString;
+	// Preset String so it will write something
+	String outputString = "Wasn't able to send Data!";
+	Integer commandOrdinal;
+
+	if (isValidCommandString(getString)) {
+	    // Remove HTTP Request Header Parts
+	    wString = getString.substring((getString.lastIndexOf("GET /") + 5), (getString.lastIndexOf(" HTTP/1.1")));
+
+	    // Remove Secret Key and leading Question Mark
+	    // it should be save now to use just the command
+	    wString = wString.substring(0, wString.lastIndexOf("?"));
+
+	    // Check if there is something else needed
+	    if (wString.contains("/")) {
+
+		if (WorldCommands.isPart(wString.substring(0, wString.indexOf("/")))) {
+		    commandOrdinal = WorldCommands.getOrdinal(wString.substring(0, wString.indexOf("/")));
+
+		    if (commandOrdinal != Integer.MIN_VALUE) {
+			String worldName = wString.substring(wString.indexOf("/") + 1);
+
+			if (isValidWorldName(worldName)) {
+			    switch (commandOrdinal) {
+			    // ONLINEPLAYER
+			    case 0:
+				outputString = returnPlayerNames(Bukkit.getServer().getWorld(worldName).getPlayers());
+				break;
+			    }
+			}
+
+		    }
+		}
+
+	    } else {
+		if (GeneralCommands.isPart(wString)) {
+		    commandOrdinal = GeneralCommands.getOrdinal(wString);
+
+		    if (commandOrdinal != Integer.MIN_VALUE) {
+
+			switch (commandOrdinal) {
+			// MAXPLAYER
+			case 0:
+			    outputString = Integer.toString(Bukkit.getServer().getMaxPlayers());
+			    break;
+			case 1:
+			    outputString = Boolean.toString(Bukkit.getServer().getOnlineMode());
+			    break;
+			}
+		    }
+		}
+	    }
+	}
+
+	return outputString;
+    }
+
+    /**
+     * Checks if given String is a valid Name for a available World
+     * 
+     * @param worldName
+     * @return
+     */
+    private Boolean isValidWorldName(String worldName) {
+	try {
+	    List<World> availableWorlds = Bukkit.getServer().getWorlds();
+
+	    for (World wrld : availableWorlds) {
+		if (wrld.getName().equals(worldName)) {
+		    return true;
+		}
+	    }
+	    return false;
+
+	} catch (Exception e) {
+	    log.info("We tried to test if you send a valid Worldname but something happened");
+	    return false;
+	}
+    }
+
+    /**
+     * Returns fancy formated Playernames
+     * 
+     * @param playerList
+     * @return
+     */
+    private String returnPlayerNames(List<Player> playerList) {
+	try {
+	    String returnString = "";
+
+	    if (playerList.size() > 0) {
+		for (Player pl : playerList) {
+		    log.info(pl.getName());
+		    returnString += pl.getName() + " ";
+		}
+	    } else {
+		returnString = "";
+	    }
+
+	    return returnString;
+	} catch (Exception e) {
+	    log.info("returnPlayerNames chrashed");
+	    return "";
+	}
+    }
+
+    private String addHTTPHeader(String resultString) {
+	String finishedString = "";
+	String byteLengthOfFinishedString = "";
+	try {
+	    byteLengthOfFinishedString = Integer.toString(resultString.getBytes("UTF8").length);
+	} catch (UnsupportedEncodingException e) {
+	    log.info("InfoApi had some Problems while getting Bytesize of String");
+	}
+
+	String newLine = "\r\n";
+
+	finishedString += "HTTP/1.1 200 OK" + newLine;
+	finishedString += "Content-Language:en" + newLine;
+	finishedString += "Content-Length:" + byteLengthOfFinishedString + newLine;
+	finishedString += "Content-Type:text/html; charset=utf-8" + newLine;
+	finishedString += newLine;
+	finishedString += resultString;
+
+	return finishedString;
+    }
+
+    /**
+     * Stops the Plugin softly
+     */
+    public synchronized void close() {
+	this.threadShouldStop = true;
+
+	try {
+	    socket.close();
+	    serverSocket.close();
+	} catch (Exception e) {
+	    log.info("InfoApi had a Problem while closing");
+	}
+    }
+
+    protected synchronized boolean isClosing() {
+	return this.threadShouldStop;
+    }
 }
