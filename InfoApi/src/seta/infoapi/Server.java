@@ -32,7 +32,8 @@ class Server extends Thread {
 	while (!this.isClosing()) {
 	    try {
 		// Cast to String
-		Integer serverPort = Integer.valueOf(configuration.getConfig("port")).intValue();
+		Integer serverPort = Integer.valueOf(
+			configuration.getConfig("port")).intValue();
 		String outputString, checkString;
 		ServerSocket serverSocket = null;
 		Socket clientSocket = null;
@@ -42,16 +43,19 @@ class Server extends Thread {
 		try {
 		    serverSocket = new ServerSocket(serverPort);
 		} catch (IOException e) {
-		    log.info("InfoApi couldn't listen to given Port: " + Integer.toString(serverPort));
+		    log.info("InfoApi couldn't listen to given Port: "
+			    + Integer.toString(serverPort));
 		}
 
 		try {
 		    clientSocket = serverSocket.accept();
 		} catch (IOException e) {
-		    log.info("InfoApi couldn't accept on: " + Integer.toString(serverPort));
+		    log.info("InfoApi couldn't accept on: "
+			    + Integer.toString(serverPort));
 		}
 
-		input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		input = new BufferedReader(new InputStreamReader(
+			clientSocket.getInputStream()));
 		output = new PrintWriter(clientSocket.getOutputStream());
 
 		checkString = input.readLine();
@@ -95,12 +99,13 @@ class Server extends Thread {
     private String processCommand(String getString) {
 	String wString;
 	// Preset String so it will write something
-	String outputString = "Wasn't able to send Data!";
+	String outputString = "ERROR";
 	Integer commandOrdinal;
 
 	if (isValidCommandString(getString)) {
 	    // Remove HTTP Request Header Parts
-	    wString = getString.substring((getString.lastIndexOf("GET /") + 5), (getString.lastIndexOf(" HTTP/1.1")));
+	    wString = getString.substring((getString.lastIndexOf("GET /") + 5),
+		    (getString.lastIndexOf(" HTTP/1.1")));
 
 	    // Remove Secret Key and leading Question Mark
 	    // it should be save now to use just the command
@@ -109,17 +114,22 @@ class Server extends Thread {
 	    // Check if there is something else needed
 	    if (wString.contains("/")) {
 
-		if (WorldCommands.isPart(wString.substring(0, wString.indexOf("/")))) {
-		    commandOrdinal = WorldCommands.getOrdinal(wString.substring(0, wString.indexOf("/")));
+		if (WorldCommands.isPart(wString.substring(0,
+			wString.indexOf("/")))) {
+		    commandOrdinal = WorldCommands.getOrdinal(wString
+			    .substring(0, wString.indexOf("/")));
 
 		    if (commandOrdinal != Integer.MIN_VALUE) {
-			String worldName = wString.substring(wString.indexOf("/") + 1);
+			String worldName = wString.substring(wString
+				.indexOf("/") + 1);
 
 			if (isValidWorldName(worldName)) {
 			    switch (commandOrdinal) {
 			    // ONLINEPLAYER
 			    case 0:
-				outputString = returnPlayerNames(Bukkit.getServer().getWorld(worldName).getPlayers());
+				outputString = returnPlayerNames(Bukkit
+					.getServer().getWorld(worldName)
+					.getPlayers());
 				break;
 			    }
 			}
@@ -136,10 +146,12 @@ class Server extends Thread {
 			switch (commandOrdinal) {
 			// MAXPLAYER
 			case 0:
-			    outputString = Integer.toString(Bukkit.getServer().getMaxPlayers());
+			    outputString = Integer.toString(Bukkit.getServer()
+				    .getMaxPlayers());
 			    break;
 			case 1:
-			    outputString = Boolean.toString(Bukkit.getServer().getOnlineMode());
+			    outputString = Boolean.toString(Bukkit.getServer()
+				    .getOnlineMode());
 			    break;
 			}
 		    }
@@ -202,20 +214,34 @@ class Server extends Thread {
     private String addHTTPHeader(String resultString) {
 	String finishedString = "";
 	String byteLengthOfFinishedString = "";
-	try {
-	    byteLengthOfFinishedString = Integer.toString(resultString.getBytes("UTF8").length);
-	} catch (UnsupportedEncodingException e) {
-	    log.info("InfoApi had some Problems while getting Bytesize of String");
-	}
 
+	// Newline Character as specified in RFC 2616
 	String newLine = "\r\n";
 
-	finishedString += "HTTP/1.1 200 OK" + newLine;
-	finishedString += "Content-Language:en" + newLine;
-	finishedString += "Content-Length:" + byteLengthOfFinishedString + newLine;
-	finishedString += "Content-Type:text/html; charset=utf-8" + newLine;
-	finishedString += newLine;
-	finishedString += resultString;
+	// Check if there was an Error
+	if (!resultString.contains("ERROR")) {
+	    try {
+		byteLengthOfFinishedString = Integer.toString(resultString
+			.getBytes("UTF8").length);
+	    } catch (UnsupportedEncodingException e) {
+		log.info("InfoApi had some Problems while getting Bytesize of String");
+	    }
+
+	    finishedString += "HTTP/1.1 200 OK" + newLine;
+	    finishedString += "Content-Language:en" + newLine;
+	    finishedString += "Content-Length:" + byteLengthOfFinishedString
+		    + newLine;
+	    finishedString += "Content-Type:text/html; charset=utf-8" + newLine;
+	    finishedString += newLine;
+	    finishedString += resultString;
+	} else {
+	    finishedString += "HTTP/1.1 500 Internal Server Error" + newLine;
+	    finishedString += "Content-Language:en" + newLine;
+	    // Well - we don't return Anything?
+	    finishedString += "Content-Length:0" + newLine;
+	    finishedString += "Content-Type:text/html; charset=utf-8" + newLine;
+	    finishedString += newLine;
+	}
 
 	return finishedString;
     }
