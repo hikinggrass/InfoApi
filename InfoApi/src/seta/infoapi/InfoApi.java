@@ -13,11 +13,11 @@ public class InfoApi extends JavaPlugin {
 
 	Config configuration = new Config();
 	server = new Server(configuration);
-	
+
 	server.start();
-	
+
 	// resurrect server thread if it crashes
-	if(!server.isAlive()) {
+	if (!server.isAlive()) {
 	    server.start();
 	    log.info("InfoApi HTTP Listener was resurrected");
 	}
