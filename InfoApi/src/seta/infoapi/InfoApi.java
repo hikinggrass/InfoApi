@@ -7,7 +7,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class InfoApi extends JavaPlugin {
     Logger log = Logger.getLogger("Minecraft");
     Server server;
-    // ChatLog chatLog;
 
     @Override
     public void onEnable() {
@@ -17,6 +16,7 @@ public class InfoApi extends JavaPlugin {
 	
 	server.start();
 	
+	// resurrect server thread if it crashes
 	if(!server.isAlive()) {
 	    server.start();
 	    log.info("InfoApi HTTP Listener was resurrected");
@@ -25,12 +25,8 @@ public class InfoApi extends JavaPlugin {
 	log.info("InfoAPI (Janka flavoured) sucessfully started.");
     }
 
-    // @SuppressWarnings("deprecation")
     @Override
     public void onDisable() {
-	// server.destroy();
-	// server.interrupt();
-	// server.kill();
 	server.close();
 	log.info("InfoAPI (Janka flavoured) sucessfully ended");
     }
