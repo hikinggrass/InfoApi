@@ -131,6 +131,9 @@ class Server extends Thread {
 					.getServer().getWorld(worldName)
 					.getPlayers());
 				break;
+			    default:
+				outputString = "Not Configured";
+				break;
 			    }
 			}
 
@@ -152,6 +155,9 @@ class Server extends Thread {
 			case 1:
 			    outputString = Boolean.toString(Bukkit.getServer()
 				    .getOnlineMode());
+			    break;
+			default:
+			    outputString = "Not Configured";
 			    break;
 			}
 		    }
