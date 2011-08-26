@@ -95,7 +95,7 @@ class Server extends Thread {
     private String processCommand(String getString) {
 	String wString;
 	// Preset String so it will write something
-	String outputString = "Wasn't able to send Data!";
+	String outputString = "ERROR";
 	Integer commandOrdinal;
 
 	if (isValidCommandString(getString)) {
@@ -129,6 +129,7 @@ class Server extends Thread {
 			    case 3:
 				outputString = Long.toString(Bukkit.getServer().getWorld(worldName).getTime());
 				break;
+			    // RETURN IF NOTHING FIT
 			    default:
 				outputString = "Not Configured";
 				break;
@@ -168,6 +169,7 @@ class Server extends Thread {
 			// RETURN IF NOTHING FIT
 			default:
 			    outputString = "Not Configured";
+			    break;
 			}
 		    }
 		}
