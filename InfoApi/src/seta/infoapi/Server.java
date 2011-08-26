@@ -95,7 +95,7 @@ class Server extends Thread {
     private String processCommand(String getString) {
 	String wString;
 	// Preset String so it will write something
-	String outputString = "ERROR";
+	String outputString = "Wasn't able to send Data!";
 	Integer commandOrdinal;
 
 	if (isValidCommandString(getString)) {
@@ -121,6 +121,14 @@ class Server extends Thread {
 			    case 0:
 				outputString = returnPlayerNames(Bukkit.getServer().getWorld(worldName).getPlayers());
 				break;
+			    // TEMP
+			    case 2:
+				outputString = Double.toString(Bukkit.getServer().getWorld(worldName).getSpawnLocation().getBlock().getTemperature());
+				break;
+			    // TIME
+			    case 3:
+				outputString = Long.toString(Bukkit.getServer().getWorld(worldName).getTime());
+				break;
 			    default:
 				outputString = "Not Configured";
 				break;
@@ -141,12 +149,25 @@ class Server extends Thread {
 			case 0:
 			    outputString = Integer.toString(Bukkit.getServer().getMaxPlayers());
 			    break;
+			// ONLINEMODE
 			case 1:
 			    outputString = Boolean.toString(Bukkit.getServer().getOnlineMode());
 			    break;
+			// VERSION
+			case 2:
+			    outputString = Bukkit.getServer().getVersion();
+			    break;
+			// RAM
+			case 3:
+			    outputString = getRuntimeMemoryInformationAsString();
+			    break;
+			// CPU
+			case 4:
+			    outputString = "Not Possible due of JAVA Limitation";
+			    break;
+			// RETURN IF NOTHING FIT
 			default:
 			    outputString = "Not Configured";
-			    break;
 			}
 		    }
 		}
@@ -236,6 +257,24 @@ class Server extends Thread {
 	}
 
 	return finishedString;
+    }
+
+    private String getRuntimeMemoryInformationAsString() {
+	String returnString = "";
+
+	// Total Memory of Java Runtime in MB
+	Double totalMemory = (Runtime.getRuntime().totalMemory() / Math.pow(10, 6));
+
+	// Free Memory of Java Runtime in MB
+	Double freeMemory = (Runtime.getRuntime().freeMemory() / Math.pow(10, 6));
+
+	// Maximum Memory of Java Runtime in MB
+	Double maxMemory = (Runtime.getRuntime().maxMemory() / Math.pow(10, 6));
+
+	// Returns totalMemory, freeMemory and maxMemory - separated by slash
+	returnString = totalMemory.toString() + "/" + freeMemory.toString() + "/" + maxMemory.toString();
+
+	return returnString;
     }
 
     /**
