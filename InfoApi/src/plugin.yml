@@ -1,6 +1,6 @@
 name: InfoApi
 main: seta.infoapi.InfoApi
-version: 0.3.1
+version: 0.3.2
 description: Provides Information about Minecraft Server queryable by HTTP Request
 author: seta
 authors: [seta, janka]
