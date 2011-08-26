@@ -117,8 +117,12 @@ class Server extends Thread {
 
 			if (isValidWorldName(worldName)) {
 			    switch (commandOrdinal) {
-			    // ONLINEPLAYER
+			    // ONLINEPLAYER - count of Players Online
 			    case 0:
+				outputString = Integer.toString(Bukkit.getServer().getWorld(worldName).getPlayers().size());
+				break;
+			    // PLAYERLIST - List of Players Online
+			    case 1:
 				outputString = returnPlayerNames(Bukkit.getServer().getWorld(worldName).getPlayers());
 				break;
 			    // TEMP
@@ -128,6 +132,14 @@ class Server extends Thread {
 			    // TIME
 			    case 3:
 				outputString = Long.toString(Bukkit.getServer().getWorld(worldName).getTime());
+				break;
+			    // TEMPC
+			    case 4:
+				outputString = Integer.toString(getCelsiusFromDoubleTemperature(Bukkit.getServer().getWorld(worldName).getSpawnLocation().getBlock().getTemperature()));
+				break;
+			    // HUMIDITY
+			    case 5:
+				outputString = Double.toString(Bukkit.getServer().getWorld(worldName).getSpawnLocation().getBlock().getHumidity());
 				break;
 			    // RETURN IF NOTHING FIT
 			    default:
@@ -265,18 +277,38 @@ class Server extends Thread {
 	String returnString = "";
 
 	// Total Memory of Java Runtime in MB
-	Double totalMemory = (Runtime.getRuntime().totalMemory() / Math.pow(10, 6));
+	Double totalMemory = Math.floor((Runtime.getRuntime().totalMemory() / Math.pow(10, 6)));
 
 	// Free Memory of Java Runtime in MB
-	Double freeMemory = (Runtime.getRuntime().freeMemory() / Math.pow(10, 6));
+	Double freeMemory = Math.floor((Runtime.getRuntime().freeMemory() / Math.pow(10, 6)));
 
 	// Maximum Memory of Java Runtime in MB
-	Double maxMemory = (Runtime.getRuntime().maxMemory() / Math.pow(10, 6));
+	Double maxMemory = Math.floor((Runtime.getRuntime().maxMemory() / Math.pow(10, 6)));
 
 	// Returns totalMemory, freeMemory and maxMemory - separated by slash
 	returnString = totalMemory.toString() + "/" + freeMemory.toString() + "/" + maxMemory.toString();
 
 	return returnString;
+    }
+
+    private int getCelsiusFromDoubleTemperature(double temperature) {
+	int maxCelsius = 60;
+	int minCelsius = -16;
+	int amountOfSteps = (maxCelsius - minCelsius);
+
+	int[] celsiusSkala = new int[amountOfSteps];
+	double multiplikator = (1 / ((double) amountOfSteps + 1));
+
+	int result = 0;
+
+	for (int iteration = 0; iteration < amountOfSteps; iteration++) {
+	    celsiusSkala[iteration] = minCelsius + iteration;
+	}
+
+	result = celsiusSkala[(int) Math.floor(temperature / multiplikator)];
+
+	return result;
+
     }
 
     /**

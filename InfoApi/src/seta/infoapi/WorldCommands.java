@@ -4,7 +4,9 @@ public enum WorldCommands {
     ONLINEPLAYER,
     PLAYERLIST,
     TEMP,
-    TIME;
+    TIME,
+    TEMPC,
+    HUMIDITY;
     
     public static Boolean isPart(String command) {
 	for(WorldCommands wc : WorldCommands.values()) {
