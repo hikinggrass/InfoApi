@@ -30,6 +30,7 @@ public class Config {
 				config.put("enablechatlog", "true");
 				config.put("loglength", "25");
 				config.put("opplayer", "kingseta");
+				config.put("npc-save-mode", "false");
 				config.store(out, name+" Config file");
 				out.flush(); 
 				out.close();
