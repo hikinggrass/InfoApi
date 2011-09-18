@@ -78,7 +78,7 @@ class Server extends Thread {
 	    serverSocket.close();
 
 	} catch (Exception e) {
-	    log.info("");
+	    log.info("kickstartSocket " + e.getMessage());
 	}
     }
 

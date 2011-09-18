@@ -4,6 +4,7 @@ public enum GeneralCommands {
     MAXPLAYER,
     ONLINEMODE,
     VERSION,
+    VERSION_SHORT,
     RAM,
     CPU;
     

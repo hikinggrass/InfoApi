@@ -3,7 +3,8 @@ package seta.infoapi;
 public enum ControlCharacter {
     CHAIN ("+"),
     WORLD ("/"),
-    END ("?");
+    END ("?"),
+    HTTP_NEWLINE("\r\n");
     
     private final String commandChar;
     ControlCharacter(String cmdChar) {

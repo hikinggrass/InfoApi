@@ -11,12 +11,11 @@ import org.bukkit.entity.Player;
 public class CommandWorker {
 
     private Config configuration;
+    Logger log = Logger.getLogger("Minecraft");
 
     public CommandWorker(Config cfg) {
 	configuration = cfg;
     }
-
-    Logger log = Logger.getLogger("Minecraft");
 
     /**
      * Process Commands Decides what to do with Commands
@@ -25,38 +24,67 @@ public class CommandWorker {
      * @return
      */
     public String processCommand(String getString) {
-	String wString;
-	// Preset String so it will write something
-	String outputString = "ERROR";
-	Integer commandOrdinal;
+	try {
+	    String outputString = "";
+	    String wString;
+	    String[] seperatedCommands;
+	    Integer commandOrdinal;
+	    String worldName;
 
-	if (isValidCommandString(getString)) {
-	    // Remove HTTP Request Header Parts
-	    wString = getString.substring((getString.lastIndexOf("GET /") + 5), (getString.lastIndexOf(" HTTP/1.1")));
+	    if (isValidCommandString(getString)) {
+		// Remove HTTP Request Header Parts
+		wString = getString.substring((getString.lastIndexOf("GET /") + 5), (getString.lastIndexOf(" HTTP/")));
 
-	    // Remove Secret Key and leading Question Mark
-	    // it should be save now to use just the command
-	    wString = wString.substring(0, wString.lastIndexOf("?"));
+		// Remove Secret Key and leading Question Mark
+		// it should be save now to use just the command
+		wString = wString.substring(0, wString.lastIndexOf(ControlCharacter.END.getCommandChar()));
 
-	    // Check if there is something else needed
-	    if (wString.contains("/")) {
-		if (WorldCommands.isPart(wString.substring(0, wString.indexOf("/")))) {
-		    commandOrdinal = WorldCommands.getOrdinal(wString.substring(0, wString.indexOf("/")));
-		    String worldName = wString.substring(wString.indexOf("/") + 1);
+		seperatedCommands = splitIntoSeperateCommands(wString);
 
-		    outputString = workWorldCommand(commandOrdinal, worldName);
+		if (seperatedCommands.length > 0) {
+		    for (String singleCommand : seperatedCommands) {
+			if (isWorldCommand(singleCommand)) {
+			    worldName = extractWorldName(singleCommand);
+
+			    commandOrdinal = WorldCommands.getOrdinal(extractCommand(singleCommand));
+			    outputString += workWorldCommand(commandOrdinal, worldName) + "+";
+			} else {
+			    commandOrdinal = GeneralCommands.getOrdinal(singleCommand);
+			    outputString += workGenericCommand(commandOrdinal) + ControlCharacter.CHAIN.getCommandChar();
+			}
+		    }
+
+		    if (outputString.endsWith(ControlCharacter.CHAIN.getCommandChar())) {
+			outputString = outputString.substring(0, outputString.length() - 1);
+		    }
 		}
-
 	    } else {
-		if (GeneralCommands.isPart(wString)) {
-		    commandOrdinal = GeneralCommands.getOrdinal(wString);
-
-		    outputString = workGenericCommand(commandOrdinal);
-		}
+		throw new Exception("No Valid Command");
 	    }
-	}
 
-	return outputString;
+	    return outputString;
+	} catch (Exception e) {
+	    log.info("processCommand " + e.getMessage());
+	    return "ERROR";
+	}
+    }
+
+    private String[] splitIntoSeperateCommands(String wString) {
+	try {
+	    String[] seperatedCommands;
+
+	    if (wString.contains(ControlCharacter.CHAIN.getCommandChar())) {
+		seperatedCommands = wString.split("\\" + ControlCharacter.CHAIN.getCommandChar());
+	    } else {
+		seperatedCommands = new String[1];
+		seperatedCommands[0] = wString;
+	    }
+
+	    return seperatedCommands;
+	} catch (Exception e) {
+	    log.info("splitIntoSeperateCommands " + e.getMessage());
+	    return null;
+	}
     }
 
     /**
@@ -102,12 +130,17 @@ public class CommandWorker {
 		case 2:
 		    outputString = Bukkit.getServer().getVersion();
 		    break;
-		// RAM
+		// VERSION_SHORT
 		case 3:
+		    outputString = Bukkit.getServer().getVersion();
+		    outputString = outputString.substring(outputString.indexOf("(") + 1, outputString.lastIndexOf(")"));
+		    break;
+		// RAM
+		case 4:
 		    outputString = getRuntimeMemoryInformationAsString();
 		    break;
 		// CPU
-		case 4:
+		case 5:
 		    outputString = "Not Possible due of JAVA Limitation";
 		    break;
 		// RETURN IF NOTHING FIT
@@ -119,37 +152,27 @@ public class CommandWorker {
 
 	    return outputString;
 	} catch (Exception e) {
-	    log.info("");
+	    log.info("workGenericCommand " + e.getMessage());
 
 	    return "ERROR";
 	}
     }
 
-    private String getRuntimeMemoryInformationAsString() {
-	String returnString = "";
+    private Boolean isWorldCommand(String wString) {
+	try {
+	    Boolean isWorldCommand = false;
 
-	// Total Memory of Java Runtime in MB
-	Double totalMemory = Math.floor((Runtime.getRuntime().totalMemory() / Math.pow(10, 6)));
+	    if (wString.contains(ControlCharacter.WORLD.getCommandChar())) {
+		isWorldCommand = true;
+	    }
 
-	// Free Memory of Java Runtime in MB
-	Double freeMemory = Math.floor((Runtime.getRuntime().freeMemory() / Math.pow(10, 6)));
-
-	// Maximum Memory of Java Runtime in MB
-	Double maxMemory = Math.floor((Runtime.getRuntime().maxMemory() / Math.pow(10, 6)));
-
-	// Returns totalMemory, freeMemory and maxMemory - separated by slash
-	returnString = totalMemory.toString() + "/" + freeMemory.toString() + "/" + maxMemory.toString();
-
-	return returnString;
+	    return isWorldCommand;
+	} catch (Exception e) {
+	    log.info("isWorldCommand " + e.getMessage());
+	    return false;
+	}
     }
 
-    /**
-     * Works out World Commands
-     * 
-     * @param commandOrdinal
-     * @param worldName
-     * @return
-     */
     private String workWorldCommand(int commandOrdinal, String worldName) {
 	try {
 	    String outputString = "ERROR";
@@ -196,9 +219,27 @@ public class CommandWorker {
 	    return outputString;
 
 	} catch (Exception e) {
-	    log.info("workWorldCommand has encountered a Problem");
+	    log.info("workWorldCommand " + e.getMessage());
 	    return "ERROR";
 	}
+    }
+
+    private String getRuntimeMemoryInformationAsString() {
+	String returnString = "";
+
+	// Total Memory of Java Runtime in MB
+	Double totalMemory = Math.floor((Runtime.getRuntime().totalMemory() / Math.pow(10, 6)));
+
+	// Free Memory of Java Runtime in MB
+	Double freeMemory = Math.floor((Runtime.getRuntime().freeMemory() / Math.pow(10, 6)));
+
+	// Maximum Memory of Java Runtime in MB
+	Double maxMemory = Math.floor((Runtime.getRuntime().maxMemory() / Math.pow(10, 6)));
+
+	// Returns totalMemory, freeMemory and maxMemory - separated by slash
+	returnString = totalMemory.toString() + "/" + freeMemory.toString() + "/" + maxMemory.toString();
+
+	return returnString;
     }
 
     /**
@@ -224,8 +265,34 @@ public class CommandWorker {
 
 	    return realPlayers;
 	} catch (Exception e) {
-	    log.info("getOnlyRealPlayerCount has a Problem");
+	    log.info("getOnlyRealPlayerCount " + e.getMessage());
 	    return 0;
+	}
+    }
+
+    private String extractWorldName(String wString) {
+	try {
+	    String worldName = "";
+
+	    worldName = wString.substring(wString.lastIndexOf(ControlCharacter.WORLD.getCommandChar()) + 1);
+
+	    return worldName;
+	} catch (Exception e) {
+	    log.info("extractWorldName " + e.getMessage());
+	    return "";
+	}
+    }
+
+    private String extractCommand(String wString) {
+	try {
+	    String commandString;
+
+	    commandString = wString.substring(0, wString.lastIndexOf(ControlCharacter.WORLD.getCommandChar()));
+
+	    return commandString;
+	} catch (Exception e) {
+	    log.info("extractCommand " + e.getMessage());
+	    return "";
 	}
     }
 
@@ -247,7 +314,7 @@ public class CommandWorker {
 	    return false;
 
 	} catch (Exception e) {
-	    log.info("We tried to test if you send a valid Worldname but something happened");
+	    log.info("isValidWorldName " + e.getMessage());
 	    return false;
 	}
     }
@@ -273,7 +340,7 @@ public class CommandWorker {
 
 	    return returnString;
 	} catch (Exception e) {
-	    log.info("returnPlayerNames chrashed");
+	    log.info("returnPlayerNames " + e.getMessage());
 	    return "";
 	}
     }
