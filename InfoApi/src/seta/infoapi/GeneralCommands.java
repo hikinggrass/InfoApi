@@ -6,7 +6,9 @@ public enum GeneralCommands {
     VERSION,
     VERSION_SHORT,
     RAM,
-    CPU;
+    CPU,
+    PLUGINS,
+    PLUGINS_SHORT;
     
     public static Boolean isPart(String command) {
 	for(GeneralCommands gc : GeneralCommands.values()) {

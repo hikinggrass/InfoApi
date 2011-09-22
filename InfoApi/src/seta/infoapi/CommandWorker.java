@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 public class CommandWorker {
 
@@ -142,6 +143,14 @@ public class CommandWorker {
 		// CPU
 		case 5:
 		    outputString = "Not Possible due of JAVA Limitation";
+		    break;
+		 // PLUGINS
+		case 6:
+		    outputString = returnPluginNames(Bukkit.getServer().getPluginManager().getPlugins());
+		    break;
+		 // PLUGINS_SHORT
+		case 7:
+		    outputString = returnPluginShortNames(Bukkit.getServer().getPluginManager().getPlugins());
 		    break;
 		// RETURN IF NOTHING FIT
 		default:
@@ -363,5 +372,43 @@ public class CommandWorker {
 
 	return result;
 
+    }
+    
+    private String returnPluginShortNames(Plugin[] plugins) {
+	try {
+	    String returnString = "";
+
+	    if (plugins.length > 0) {
+		for (Plugin plugin : plugins) {
+		    returnString += plugin.getDescription().getName() + "\r\n";
+		}
+	    } else {
+		returnString = "";
+	    }
+
+	    return returnString;
+	} catch (Exception e) {
+	    log.info("returnPluginShortNames " + e.getMessage());
+	    return "";
+	}
+    }
+    
+    private String returnPluginNames(Plugin[] plugins) {
+	try {
+	    String returnString = "";
+
+	    if (plugins.length > 0) {
+		for (Plugin plugin : plugins) {
+		    returnString += plugin.getDescription().getFullName() + "\r\n";
+		}
+	    } else {
+		returnString = "";
+	    }
+
+	    return returnString;
+	} catch (Exception e) {
+	    log.info("returnPluginNames " + e.getMessage());
+	    return "";
+	}
     }
 }
